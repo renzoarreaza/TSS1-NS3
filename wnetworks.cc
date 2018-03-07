@@ -27,14 +27,12 @@ NS_LOG_COMPONENT_DEFINE ("FirstScriptExample");
 int
 main (int argc, char *argv[])
 {
+  uint32_t dist=1; //in meters
+
   CommandLine cmd;
   
-  cmd.AddValue ("n", "number of nodes", n);
-  cmd.AddValue ("phyMode", "Wifi Phy mode", phyMode);
-  cmd.AddValue ("verbose", "turn on all WifiNetDevice log components", verbose);
-  cmd.AddValue ("rtsCts", "RTS/CTS threshold", rtsCts);
+  cmd.AddValue ("dist", "distance from user to AP", dist);
   cmd.Parse (argc, argv);
-
   
   Time::SetResolution (Time::NS);
   LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
