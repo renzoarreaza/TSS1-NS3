@@ -1,0 +1,72 @@
+distance = 5
+Protection mode		Slot time supported		PLCP preamble supported		Payload Size	Throughput
+Disabled		Long				Long				200 bytes	5.45056 Mbit/s
+Disabled		Long				Long				400 bytes	9.71968 Mbit/s
+Disabled		Long				Long				600 bytes	13.2456 Mbit/s
+Disabled		Long				Long				800 bytes	16.2182 Mbit/s
+Disabled		Long				Long				1000 bytes	18.8144 Mbit/s
+Disabled		Long				Long				1200 bytes	21.167 Mbit/s
+Disabled		Long				Long				1400 bytes	23.0037 Mbit/s
+CTS/RTS?		Long				Long				200 bytes	5.38848 Mbit/s
+CTS/RTS?		Long				Long				400 bytes	9.60736 Mbit/s
+CTS/RTS?		Long				Long				600 bytes	13.308 Mbit/s
+CTS/RTS?		Long				Long				800 bytes	16.1997 Mbit/s
+CTS/RTS?		Long				Long				1000 bytes	18.9008 Mbit/s
+CTS/RTS?		Long				Long				1200 bytes	21.1046 Mbit/s
+CTS/RTS?		Long				Long				1400 bytes	22.8637 Mbit/s
+
+
+distance = 10
+Protection mode		Slot time supported		PLCP preamble supported		Payload Size	Throughput
+Disabled		Long				Long				200 bytes	5.47136 Mbit/s
+Disabled		Long				Long				400 bytes	9.7184 Mbit/s
+Disabled		Long				Long				600 bytes	13.2442 Mbit/s
+Disabled		Long				Long				800 bytes	16.2778 Mbit/s
+Disabled		Long				Long				1000 bytes	18.8112 Mbit/s
+Disabled		Long				Long				1200 bytes	21.1507 Mbit/s
+Disabled		Long				Long				1400 bytes	23.0026 Mbit/s
+CTS/RTS?		Long				Long				200 bytes	5.38704 Mbit/s
+CTS/RTS?		Long				Long				400 bytes	9.60672 Mbit/s
+CTS/RTS?		Long				Long				600 bytes	13.3061 Mbit/s
+CTS/RTS?		Long				Long				800 bytes	16.199 Mbit/s
+CTS/RTS?		Long				Long				1000 bytes	18.9 Mbit/s
+CTS/RTS?		Long				Long				1200 bytes	21.1037 Mbit/s
+CTS/RTS?		Long				Long				1400 bytes	22.867 Mbit/s
+
+distance = 2
+Protection mode		Slot time supported		PLCP preamble supported		Payload Size	Throughput
+Disabled		Long				Long				200 bytes	5.45104 Mbit/s
+Disabled		Long				Long				400 bytes	9.72064 Mbit/s
+Disabled		Long				Long				600 bytes	13.2461 Mbit/s
+Disabled		Long				Long				800 bytes	16.2182 Mbit/s
+Disabled		Long				Long				1000 bytes	18.8152 Mbit/s
+Disabled		Long				Long				1200 bytes	21.168 Mbit/s
+Disabled		Long				Long				1400 bytes	23.0048 Mbit/s
+CTS/RTS?		Long				Long				200 bytes	5.3888 Mbit/s
+CTS/RTS?		Long				Long				400 bytes	9.60832 Mbit/s
+CTS/RTS?		Long				Long				600 bytes	13.308 Mbit/s
+CTS/RTS?		Long				Long				800 bytes	16.2003 Mbit/s
+CTS/RTS?		Long				Long				1000 bytes	18.9016 Mbit/s
+CTS/RTS?		Long				Long				1200 bytes	21.1056 Mbit/s
+CTS/RTS?		Long				Long				1400 bytes	22.8659 Mbit/s
+
+distance = 20
+Protection mode		Slot time supported		PLCP preamble supported		Payload Size	Throughput
+Disabled		Long				Long				200 bytes	5.4328 Mbit/s
+Disabled		Long				Long				400 bytes	9.85984 Mbit/s
+Disabled		Long				Long				600 bytes	13.2379 Mbit/s
+Disabled		Long				Long				800 bytes	16.5562 Mbit/s
+Disabled		Long				Long				1000 bytes	18.8376 Mbit/s
+Disabled		Long				Long				1200 bytes	21.1238 Mbit/s
+Disabled		Long				Long				1400 bytes	23.0014 Mbit/s
+CTS/RTS?		Long				Long				200 bytes	5.416 Mbit/s
+CTS/RTS?		Long				Long				400 bytes	9.87136 Mbit/s
+CTS/RTS?		Long				Long				600 bytes	13.3051 Mbit/s
+CTS/RTS?		Long				Long				800 bytes	16.4602 Mbit/s
+CTS/RTS?		Long				Long				1000 bytes	18.7608 Mbit/s
+CTS/RTS?		Long				Long				1200 bytes	21.3341 Mbit/s
+CTS/RTS?		Long				Long				1400 bytes	22.8637 Mbit/s
+
+
+
+
