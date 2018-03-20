@@ -46,7 +46,7 @@
 //
 // Network topology:
 //
-//   STA (802.11b)    AP (802.11b/g)   STA (802.11b/g)
+//   STA (802.11g)    AP (802.11g)   STA (802.11g)
 //   *                *                *
 //   |                |                |
 //   n1               n2               n3
@@ -73,7 +73,7 @@ Experiment::Run (bool enableProtection, bool enableShortSlotTime, bool enableSho
   uint32_t totalPacketsThrough = 0;
 
   NodeContainer wifiGStaNodes;
-  wifiGStaNodes.Create (2);
+  wifiGStaNodes.Create (4);
   NodeContainer wifiApNode;
   wifiApNode.Create (1);
 
@@ -96,6 +96,13 @@ Experiment::Run (bool enableProtection, bool enableShortSlotTime, bool enableSho
    
   // Configure the PLCP preamble type: long or short
   phy.Set ("ShortPlcpPreambleSupported", BooleanValue (enableShortPlcpPreamble));
+  if(enableProtection) {
+  // enable rts cts all the time.
+  Config::SetDefault ("ns3::WifiRemoteStationManager::RtsCtsThreshold", StringValue ("0"));
+  }
+
+  // disable fragmentation
+  Config::SetDefault ("ns3::WifiRemoteStationManager::FragmentationThreshold", StringValue ("2200"));
   
   // 802.11b/g STA
   wifi.SetStandard (WIFI_PHY_STANDARD_80211g);
@@ -108,18 +115,41 @@ Experiment::Run (bool enableProtection, bool enableShortSlotTime, bool enableSho
                "BeaconGeneration", BooleanValue (true),
                "EnableNonErpProtection", BooleanValue (enableProtection),
                "ShortSlotTimeSupported", BooleanValue (enableShortSlotTime));
-    
+  
   NetDeviceContainer apDevice;
   apDevice = wifi.Install (phy, mac, wifiApNode);
 
   // Setting mobility model
   MobilityHelper mobility;
   Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
-  
+
   positionAlloc->Add (Vector (0.0, 0.0, 0.0));
-  positionAlloc->Add (Vector (-distance, 0.0, 0.0));
-  positionAlloc->Add (Vector (distance, 0.0, 0.0));
+  positionAlloc->Add (Vector (distance, distance, 0.0));
+  positionAlloc->Add (Vector (distance, -distance, 0.0));
+  positionAlloc->Add (Vector (-distance, distance, 0.0));
+  positionAlloc->Add (Vector (-distance, -distance, 0.0));
   
+//  positionAlloc->Add (Vector (0.0, 0.0, 0.0));
+//  positionAlloc->Add (Vector (distance, distance, 0.0));
+//  positionAlloc->Add (Vector (2*distance, distance, 0.0));
+//  positionAlloc->Add (Vector (distance, 2*distance, 0.0));
+//  positionAlloc->Add (Vector (2*distance, 2*distance, 0.0));
+//  
+//  positionAlloc->Add (Vector (-distance, distance, 0.0));
+//  positionAlloc->Add (Vector (-2*distance, distance, 0.0));
+//  positionAlloc->Add (Vector (-distance, 2*distance, 0.0));
+//  positionAlloc->Add (Vector (-2*distance, 2*distance, 0.0));
+//  
+//  positionAlloc->Add (Vector (distance, -distance, 0.0));
+//  positionAlloc->Add (Vector (2*distance, -distance, 0.0));
+//  positionAlloc->Add (Vector (distance, -2*distance, 0.0));
+//  positionAlloc->Add (Vector (2*distance, -2*distance, 0.0));
+//  
+//  positionAlloc->Add (Vector (-distance, -distance, 0.0));
+//  positionAlloc->Add (Vector (-2*distance, -distance, 0.0));
+//  positionAlloc->Add (Vector (-distance, -2*distance, 0.0));
+//  positionAlloc->Add (Vector (-2*distance, -2*distance, 0.0));
+ 
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobility.Install (wifiApNode);
@@ -138,7 +168,9 @@ Experiment::Run (bool enableProtection, bool enableShortSlotTime, bool enableSho
   Ipv4InterfaceContainer ApInterface;
   ApInterface = address.Assign (apDevice);
 
-  phy.EnablePcap ("1project", apDevice.Get (0));
+  std::string name;
+  name = "1project-" + std::to_string(distance) + "m";
+  phy.EnablePcap (name, apDevice.Get (0));
 
 
   // Setting applications
@@ -207,8 +239,7 @@ int main (int argc, char *argv[])
   bool isUdp = true;
 //  double distance = 20; //meters
 //  double distance;
-
-  std::vector<double> list{2, 5, 10, 20};
+  std::vector<double> list{4, 10, 20};
   
   CommandLine cmd;
   cmd.AddValue ("payloadSize", "Payload size in bytes", payloadSize);
@@ -217,7 +248,7 @@ int main (int argc, char *argv[])
 
   Experiment experiment;
   double throughput = 0;
-  std::cout << "G-only, 1 AP, 2 STA." << std::endl;
+  std::cout << "G-only, 1 AP" << std::endl;
 
 //  while(distance <= 20){
   for(double distance : list){
