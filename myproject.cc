@@ -36,13 +36,18 @@ public:
   
   void AdvancePosition (Ptr<Node> node, int stepsSize, int stepsTime);
   void RxCallback (std::string path, Ptr<const Packet> packet, const Address &from);
+  void FailedPacketCallback (std::string path, Mac48Address dest);
   void RateCallback (std::string path, uint64_t rate, Mac48Address dest);
   
   uint32_t bytesTotal = 0;
   uint32_t indexTime = 1;
-  Gnuplot2dDataset outputDistanceThroughput;
-  Gnuplot2dDataset outputTimeRate;
-  Gnuplot2dDataset outputTimePosition;
+  uint32_t failedPackets = 0;
+
+
+  Gnuplot2dDataset outputDistanceThroughput{"Received Throughput"};
+  Gnuplot2dDataset outputTimeRate{"Data Rate - MCS"};
+  Gnuplot2dDataset outputTimePosition{"STA position"};
+  Gnuplot2dDataset outputFailedPacket{"AP - Failed transmission"};
 };
 
 void
@@ -54,9 +59,13 @@ Statistics::AdvancePosition (Ptr<Node> node, int stepsSize, int stepsTime)
   
   double throughput = ((bytesTotal * 8.0) / (1000000 * stepsTime));
   bytesTotal = 0;
+
   outputDistanceThroughput.Add (pos.x, throughput);
   outputTimePosition.Add (indexTime * stepsTime, pos.x);
   indexTime += 1;
+  outputFailedPacket.Add (pos.x, failedPackets);
+  failedPackets = 0;
+
   pos.x += stepsSize;
   mobility->SetPosition (pos);
   Simulator::Schedule (Seconds (stepsTime), &Statistics::AdvancePosition, this, node, stepsSize, stepsTime);
@@ -67,6 +76,13 @@ Statistics::RxCallback (std::string path, Ptr<const Packet> packet, const Addres
 {
   bytesTotal += packet->GetSize ();
 }
+
+void
+Statistics::FailedPacketCallback (std::string path, Mac48Address dest)
+{
+  failedPackets += 1;
+}
+
 
 void Statistics::RateCallback (std::string path, uint64_t rate, Mac48Address dest)
 {
@@ -129,7 +145,7 @@ int main (int argc, char *argv[])
   wifiPhy.Set ("MaxSupportedRxSpatialStreams", UintegerValue (spatialStreams));
 
   //Enable GreenField mode - Hardcoded
-  wifiPhy.Set ("GreenfieldEnabled", BooleanValue(true));
+  //wifiPhy.Set ("GreenfieldEnabled", BooleanValue(true));
 
   //Create MAC and WiFi helper and SSID
   WifiMacHelper wifiMac;
@@ -216,6 +232,10 @@ int main (int argc, char *argv[])
   Config::Connect ("/NodeList/0/DeviceList/*/$ns3::WifiNetDevice/RemoteStationManager/$" + apRateControl + "/RateChange",
                    MakeCallback (&Statistics::RateCallback, &result));
 
+  //Register failed transmission of packets
+  Config::Connect ("/NodeList/0/DeviceList/*/$ns3::WifiNetDevice/RemoteStationManager/$" + apRateControl + "/MacTxDataFailed",
+                   MakeCallback (&Statistics::FailedPacketCallback, &result));
+
   Simulator::Stop (Seconds (simulationTime));
   Simulator::Run ();
 
@@ -245,7 +265,13 @@ int main (int argc, char *argv[])
   gnuplot3.AddDataset (result.outputTimePosition);
   gnuplot3.GenerateOutput (outfile3);
 
-
+  std::ofstream outfile4 ("FailedPackets.plt");
+  Gnuplot gnuplot4 = Gnuplot ("FailedPackets.eps", "Position");
+  gnuplot4.SetTerminal ("post eps color enhanced");
+  gnuplot4.SetLegend ("# Frames", "Position (meters)");
+  gnuplot4.SetTitle ("Failed Frames vs distance (meters)");
+  gnuplot4.AddDataset (result.outputFailedPacket);
+  gnuplot4.GenerateOutput (outfile4);
   Simulator::Destroy ();
 
 }
