@@ -1,7 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2016 Sébastien Deronne
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation;
@@ -11,12 +9,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * Author: Sébastien Deronne <sebastien.deronne@gmail.com>
+ * Modified by Renzo Arreaza
  */
+
 
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
@@ -25,6 +20,7 @@
 #include "ns3/mobility-module.h"
 #include "ns3/ipv4-global-routing-helper.h"
 #include "ns3/internet-module.h"
+
 
 // This example shows how the presence of an 802.11b station in an 802.11g network does affect the performance.
 //
@@ -59,7 +55,7 @@ class Experiment
 {
 public:
   Experiment ();
-  double Run (bool enableProtection, bool enableShortSlotTime, bool enableShortPlcpPreamble, bool isUdp, uint32_t payloadSize, double distance, uint32_t simulationTime);
+  double Run (bool enableProtection, bool enableShortSlotTime, bool enableShortPlcpPreamble, bool isUdp, uint32_t payloadSize, double distance, uint32_t simulationTime, uint32_t usernodes);
 };
 
 Experiment::Experiment ()
@@ -67,18 +63,20 @@ Experiment::Experiment ()
 }
 
 double
-Experiment::Run (bool enableProtection, bool enableShortSlotTime, bool enableShortPlcpPreamble, bool isUdp, uint32_t payloadSize, double distance, uint32_t simulationTime)
+Experiment::Run (bool enableProtection, bool enableShortSlotTime, bool enableShortPlcpPreamble, bool isUdp, uint32_t payloadSize, double distance, uint32_t simulationTime, uint32_t usernodes)
 {
   double throughput = 0;
   uint32_t totalPacketsThrough = 0;
+//  uint32_t usernodes = 4; //4 or 16 
 
   NodeContainer wifiGStaNodes;
-  wifiGStaNodes.Create (4);
+  wifiGStaNodes.Create (usernodes);
   NodeContainer wifiApNode;
   wifiApNode.Create (1);
 
   YansWifiChannelHelper channel = YansWifiChannelHelper::Default ();
   channel.AddPropagationLoss ("ns3::RangePropagationLossModel");
+//  channel.AddPropagationLoss ("ns3::LogDistancePropagationLossModel");
 
   YansWifiPhyHelper phy = YansWifiPhyHelper::Default ();
   phy.SetPcapDataLinkType (YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
@@ -122,34 +120,36 @@ Experiment::Run (bool enableProtection, bool enableShortSlotTime, bool enableSho
   // Setting mobility model
   MobilityHelper mobility;
   Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
+  if(usernodes == 4) {
+	  positionAlloc->Add (Vector (0.0, 0.0, 0.0));
+	  positionAlloc->Add (Vector (distance, distance, 0.0));
+	  positionAlloc->Add (Vector (distance, -distance, 0.0));
+	  positionAlloc->Add (Vector (-distance, distance, 0.0));
+	  positionAlloc->Add (Vector (-distance, -distance, 0.0));
+  } 
+  if(usernodes ==16) { 
+	  positionAlloc->Add (Vector (0.0, 0.0, 0.0));
+	  positionAlloc->Add (Vector (distance, distance, 0.0));
+	  positionAlloc->Add (Vector (0.5*distance, distance, 0.0));
+	  positionAlloc->Add (Vector (distance, 0.5*distance, 0.0));
+	  positionAlloc->Add (Vector (0.5*distance, 0.5*distance, 0.0));
+	  
+	  positionAlloc->Add (Vector (-distance, distance, 0.0));
+	  positionAlloc->Add (Vector (-0.5*distance, distance, 0.0));
+	  positionAlloc->Add (Vector (-distance, 0.5*distance, 0.0));
+	  positionAlloc->Add (Vector (-0.5*distance, 0.5*distance, 0.0));
+	  
+	  positionAlloc->Add (Vector (distance, -distance, 0.0));
+	  positionAlloc->Add (Vector (0.5*distance, -distance, 0.0));
+	  positionAlloc->Add (Vector (distance, -0.5*distance, 0.0));
+	  positionAlloc->Add (Vector (0.5*distance, -0.5*distance, 0.0));
+	  
+	  positionAlloc->Add (Vector (-distance, -distance, 0.0));
+	  positionAlloc->Add (Vector (-0.5*distance, -distance, 0.0));
+	  positionAlloc->Add (Vector (-distance, -0.5*distance, 0.0));
+	  positionAlloc->Add (Vector (-0.5*distance, -0.5*distance, 0.0));
+  } 
 
-  positionAlloc->Add (Vector (0.0, 0.0, 0.0));
-  positionAlloc->Add (Vector (distance, distance, 0.0));
-  positionAlloc->Add (Vector (distance, -distance, 0.0));
-  positionAlloc->Add (Vector (-distance, distance, 0.0));
-  positionAlloc->Add (Vector (-distance, -distance, 0.0));
-  
-//  positionAlloc->Add (Vector (0.0, 0.0, 0.0));
-//  positionAlloc->Add (Vector (distance, distance, 0.0));
-//  positionAlloc->Add (Vector (2*distance, distance, 0.0));
-//  positionAlloc->Add (Vector (distance, 2*distance, 0.0));
-//  positionAlloc->Add (Vector (2*distance, 2*distance, 0.0));
-//  
-//  positionAlloc->Add (Vector (-distance, distance, 0.0));
-//  positionAlloc->Add (Vector (-2*distance, distance, 0.0));
-//  positionAlloc->Add (Vector (-distance, 2*distance, 0.0));
-//  positionAlloc->Add (Vector (-2*distance, 2*distance, 0.0));
-//  
-//  positionAlloc->Add (Vector (distance, -distance, 0.0));
-//  positionAlloc->Add (Vector (2*distance, -distance, 0.0));
-//  positionAlloc->Add (Vector (distance, -2*distance, 0.0));
-//  positionAlloc->Add (Vector (2*distance, -2*distance, 0.0));
-//  
-//  positionAlloc->Add (Vector (-distance, -distance, 0.0));
-//  positionAlloc->Add (Vector (-2*distance, -distance, 0.0));
-//  positionAlloc->Add (Vector (-distance, -2*distance, 0.0));
-//  positionAlloc->Add (Vector (-2*distance, -2*distance, 0.0));
- 
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobility.Install (wifiApNode);
@@ -230,6 +230,7 @@ Experiment::Run (bool enableProtection, bool enableShortSlotTime, bool enableSho
     }
   
   return throughput;
+  return usernodes;
 }
 
 int main (int argc, char *argv[])
@@ -239,7 +240,7 @@ int main (int argc, char *argv[])
   bool isUdp = true;
 //  double distance = 20; //meters
 //  double distance;
-  std::vector<double> list{4, 10, 20};
+  std::vector<uint32_t> list{4, 16};
   
   CommandLine cmd;
   cmd.AddValue ("payloadSize", "Payload size in bytes", payloadSize);
@@ -248,28 +249,28 @@ int main (int argc, char *argv[])
 
   Experiment experiment;
   double throughput = 0;
+  double distance = 4;
   std::cout << "G-only, 1 AP" << std::endl;
 
 //  while(distance <= 20){
-  for(double distance : list){
+  for(uint32_t usernodes : list){
 	  std::cout << "distance = " << distance << std::endl;
-	  std::cout << "Protection mode" << "\t\t" << "Slot time supported" << "\t\t" << "PLCP preamble supported" << "\t\t" << "Payload Size" << "\t" << "Throughput" << std::endl;
+	  std::cout << "Protection mode" << "\t\t" << "user nodes" << "\t" << "Payload Size" << "\t" << "Throughput" << std::endl;
 	  payloadSize = 200;
 	  while(payloadSize < 1500){ 
-		throughput = experiment.Run (false, false, false, isUdp, payloadSize, distance, simulationTime);
-		std::cout << "Disabled" << "\t\t" << "Long" << "\t\t\t\t" << "Long" << "\t\t\t\t" << payloadSize << " bytes" << "\t" << throughput <<" Mbit/s" << std::endl;
+		throughput = experiment.Run (false, false, false, isUdp, payloadSize, distance, simulationTime, usernodes);
+		std::cout << "Disabled" << "\t\t" << usernodes << "\t\t" << payloadSize << "\t\t" << throughput << std::endl;
 		payloadSize = payloadSize + 200;
 	  }
 
 
 	  payloadSize = 200;
 	  while(payloadSize < 1500){ 
-		throughput = experiment.Run (true, false, false, isUdp, payloadSize, distance, simulationTime);
-		std::cout << "CTS/RTS?" << "\t\t" << "Long" << "\t\t\t\t" << "Long" << "\t\t\t\t" << payloadSize << " bytes" << "\t" << throughput <<" Mbit/s" << std::endl;
+		throughput = experiment.Run (true, false, false, isUdp, payloadSize, distance, simulationTime, usernodes);
+		std::cout << "RTS/CTS" << "\t\t\t" << usernodes << "\t\t" << payloadSize << "\t\t" << throughput << std::endl;
 		payloadSize = payloadSize + 200;
 	  }
   std::cout << "\n" << std::endl;
-  distance = 10;
   }
 
 
@@ -282,10 +283,7 @@ int main (int argc, char *argv[])
     {
       NS_LOG_ERROR ("Obtained throughput " << throughput << " is not in the expected boundaries!");
       exit (1);
-    }
-  std::cout << "Disabled" << "\t\t" << "Long" << "\t\t\t\t" << "Long" << "\t\t\t\t" << "G-only" << "\t\t" << throughput <<" Mbit/s" << std::endl;
-  
-  throughput = experiment.Run (false, true, false, false, isUdp, payloadSize, simulationTime);
+    } std::cout << "Disabled" << "\t\t" << "Long" << "\t\t\t\t" << "Long" << "\t\t\t\t" << "G-only" << "\t\t" << throughput <<" Mbit/s" << std::endl; throughput = experiment.Run (false, true, false, false, isUdp, payloadSize, simulationTime);
   if (throughput < 29 || throughput > 30)
     {
       NS_LOG_ERROR ("Obtained throughput " << throughput << " is not in the expected boundaries!");
