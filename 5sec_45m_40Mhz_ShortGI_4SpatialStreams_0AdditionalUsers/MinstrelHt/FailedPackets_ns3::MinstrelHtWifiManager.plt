@@ -6,7 +6,7 @@ set ylabel "# Frames"
 
 set autoscale y
 set autoscale x
-plot "-"  title "AP - Failed Tx" with lines
+plot "-"  title "AP - Failed Tx" with steps
 10 0
 15 0
 20 0
