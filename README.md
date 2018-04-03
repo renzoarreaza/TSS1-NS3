@@ -22,7 +22,7 @@ stepsSize: Distance between steps </br>
 additionalUsers: Add 3 Additional users (default false) </br>
 
 ## How to generate the plots
-At the end of the simulation, 5 .plt files are created in the folder where ./waf was run. The data of these files can be plotted with:
-gnuplot
-And then:
-load "<path to the directory>/<name of the file>"
+At the end of the simulation, 5 .plt files are created in the folder where ./waf was run. The data of these files can be plotted with:</br>
+| gnuplot
+And then: </br>
+| load "<path to the directory>/<name of the file>"
