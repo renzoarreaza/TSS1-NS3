@@ -22,7 +22,15 @@ stepsSize: Distance between steps </br>
 additionalUsers: Add 3 Additional users (default false) </br>
 
 ## How to generate the plots
-At the end of the simulation, 5 .plt files are created in the folder where ./waf was run. The data of these files can be plotted with:</br>
+At the end of the simulation, 5 .plt files are created in the folder where ./waf was run. The names of these files vary according to the rate control algorithm used. The generic names are listed below:</br>
+
+TimeRate_ns3::\<name of the rate algorithm\>.plt</br>
+TimePosition_ns3::\<name of the rate algorithm\>.plt</br>
+PosDevices_ns3::\<name of the rate algorithm\>.plt</br>
+FailedPackets_ns3::\<name of the rate algorithm\>.plt</br>
+DistanceThroughput_ns3::\<name of the rate algorithm\>.plt</br>
+
+The data of these files can be plotted with:</br>
 | gnuplot </br>
 And then: </br>
 | load "\<path to the directory\>/\<name of the file\>"
