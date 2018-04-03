@@ -25,4 +25,4 @@ additionalUsers: Add 3 Additional users (default false) </br>
 At the end of the simulation, 5 .plt files are created in the folder where ./waf was run. The data of these files can be plotted with:</br>
 | gnuplot </br>
 And then: </br>
-| load "<path to the directory>/<name of the file>"
+| load "\<path to the directory\>/\<name of the file\>"
