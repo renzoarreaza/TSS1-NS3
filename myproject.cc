@@ -38,17 +38,20 @@ public:
   void RxCallback (std::string path, Ptr<const Packet> packet, const Address &from);
   void FailedPacketCallback (std::string path, Mac48Address dest);
   void RateCallback (std::string path, uint64_t rate, Mac48Address dest);
-  
+  void RateIdealCallback (std::string path, uint64_t oldRate, uint64_t newRate);
+ 
   uint32_t bytesTotal = 0;
   uint32_t indexTime = 1;
   int indexStep = 1;
   uint32_t failedPackets = 0;
+  uint64_t prevRate = 0;
 
+  Gnuplot2dDataset outputDistanceThroughput{"Rx Throughput"};
 
-  Gnuplot2dDataset outputDistanceThroughput{"Received Throughput"};
   Gnuplot2dDataset outputTimeRate{"Data Rate - MCS"};
+
   Gnuplot2dDataset outputTimePosition{"STA position"};
-  Gnuplot2dDataset outputFailedPacket{"AP - Failed transmission"};
+  Gnuplot2dDataset outputFailedPacket{"AP - Failed Tx"};
 };
 
 void
@@ -67,6 +70,8 @@ Statistics::AdvancePosition (Ptr<Node> node, int stepsSize, int stepsTime, int s
   outputFailedPacket.Add (indexTime * stepsTime, failedPackets);
   failedPackets = 0;
 
+  cout << pos.x << endl;
+
   if (indexStep < steps)
   {
 
@@ -77,6 +82,7 @@ Statistics::AdvancePosition (Ptr<Node> node, int stepsSize, int stepsTime, int s
   }
   else
   {
+    
     pos.x -= stepsSize;
     indexStep += 1;
     mobility->SetPosition (pos);
@@ -100,9 +106,20 @@ Statistics::FailedPacketCallback (std::string path, Mac48Address dest)
 
 void Statistics::RateCallback (std::string path, uint64_t rate, Mac48Address dest)
 {
-  outputTimeRate.Add ((Simulator::Now ()).GetSeconds (), rate/1000000);
+
+  if (rate != prevRate){
+    outputTimeRate.Add ((Simulator::Now ()).GetSeconds (), rate/1000000);
+    prevRate = rate;
+  }
 }
 
+void Statistics::RateIdealCallback (std::string path, uint64_t oldRate, uint64_t newRate)
+{
+  
+  prevRate = newRate;
+  outputTimeRate.Add ((Simulator::Now ()).GetSeconds (), newRate/1000000);
+
+}
 
 void
 GetPosition (Ptr<Node> node, Gnuplot3dDataset outputPosUsers)
@@ -110,7 +127,6 @@ GetPosition (Ptr<Node> node, Gnuplot3dDataset outputPosUsers)
   Ptr<MobilityModel> mobility = node->GetObject<MobilityModel> ();
   Vector pos = mobility->GetPosition();
   outputPosUsers.Add(pos.x, pos.y, pos.z);
-  //std::cout << pos.x << pos.y << pos.z << std::endl;
 }
 
 
@@ -125,7 +141,7 @@ int main (int argc, char *argv[])
   uint32_t rtsThreshold = 65535;
   std::string apRateControl = "ns3::MinstrelHtWifiManager";
   uint32_t chWidth = 20;
-  int steps = 40;
+  int steps = 45;
 
   int stepsSize = 1;
   int stepsTime = 1;
@@ -137,21 +153,25 @@ int main (int argc, char *argv[])
   int numberUsers = 4;
   Gnuplot3dDataset outputPosUsers{"Devices"};
 
+  string dataConst = "HtMcs7";
+
   CommandLine cmd;
   cmd.AddValue ("initialDistance", "Initial distance of the STA", initialDistance);
   cmd.AddValue ("shortGuardInterval", "Enable Short Guard Interval", shortGuardInterval);
   cmd.AddValue ("spatialStreams", "Number of Spatial Streams", spatialStreams);
   cmd.AddValue ("rtsThreshold", "RTS threshold", rtsThreshold);
   cmd.AddValue ("apRateControl", "Rate Control Algorithm of the AP", apRateControl);
-  cmd.AddValue ("channelWidth", "Channel width of all the stations", chWidth);
+  cmd.AddValue ("dataConst", "Rate of the data plane for Constant Rate Algorithm", dataConst);
+  cmd.AddValue ("channelWidth", "Channel width of the stations", chWidth);
   cmd.AddValue ("steps", "How many different distances to try", steps);
   cmd.AddValue ("stepsTime", "Time on each step", stepsTime);
   cmd.AddValue ("stepsSize", "Distance between steps", stepsSize);
-  cmd.AddValue ("additionalUsers", "4 Additional users (default false)", additionalUsers);
+  cmd.AddValue ("additionalUsers", "Add 4 Additional users (default false)", additionalUsers);
   cmd.Parse (argc, argv);
 
 
   int simulationTime = stepsTime * (2 * steps - 1);
+
 
   //Create AP
   NodeContainer wifiApNode;
@@ -160,12 +180,7 @@ int main (int argc, char *argv[])
   //Create STA
   NodeContainer wifiStaNode;
  
-  if (additionalUsers
-
-
-
-
-) wifiStaNode.Create(1 + numberUsers);
+  if (additionalUsers) wifiStaNode.Create(1 + numberUsers);
   else wifiStaNode.Create(1);
 
   //Create channel helper and phy helper. Create channel.
@@ -198,6 +213,15 @@ int main (int argc, char *argv[])
   //Set 802.11n standard - 5 GHz
   wifi.SetStandard (WIFI_PHY_STANDARD_80211n_5GHZ);
 
+  if (apRateControl == "ns3::ConstantRateWifiManager") wifi.SetRemoteStationManager (apRateControl, "RtsCtsThreshold", UintegerValue (rtsThreshold), "DataMode", StringValue(dataConst));
+  else wifi.SetRemoteStationManager (apRateControl, "RtsCtsThreshold", UintegerValue (rtsThreshold));
+
+  wifiMac.SetType ("ns3::ApWifiMac",
+                   "Ssid", SsidValue (ssid));
+
+  NetDeviceContainer apDevice = wifi.Install (wifiPhy, wifiMac, wifiApNode);
+
+
   //Configure STA node - Hardcoded Rate Control Algorithm
   wifi.SetRemoteStationManager ("ns3::MinstrelHtWifiManager", "RtsCtsThreshold", UintegerValue (rtsThreshold), "PrintStats", BooleanValue(true));
 
@@ -208,24 +232,17 @@ int main (int argc, char *argv[])
 
   NetDeviceContainer staDevice = wifi.Install (wifiPhy, wifiMac, wifiStaNode);
 
-  //Configure AP node 
-  wifi.SetRemoteStationManager (apRateControl, "RtsCtsThreshold", UintegerValue (rtsThreshold));
-
-  wifiMac.SetType ("ns3::ApWifiMac",
-                   "Ssid", SsidValue (ssid));
-
-  NetDeviceContainer apDevice = wifi.Install (wifiPhy, wifiMac, wifiApNode);
-
   // Set channel width
   Config::Set ("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Phy/ChannelWidth", UintegerValue (chWidth));
   
+
 
   // mobility.
   MobilityHelper mobility;
   Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
 
   positionAlloc->Add (Vector (0.0, 0.0, 3.0));
-  positionAlloc->Add (Vector (initialDistance, 0.0, 0.0));
+  positionAlloc->Add (Vector (initialDistance, 0.0, 1.0));
 
   if (additionalUsers)
   {
@@ -233,7 +250,7 @@ int main (int argc, char *argv[])
     {
       for (double x = -5.0; (indexPos < numberUsers) and (x <= 5.0); x+=10.0)
       {
-        positionAlloc->Add (Vector (x, y, 0.0));
+        positionAlloc->Add (Vector (x, y, 1.0));
         indexPos += 1;
       }
     }
@@ -356,47 +373,58 @@ int main (int argc, char *argv[])
 
 
   //Pcap - Capture Frames
-  wifiPhy.EnablePcap ("myproject", apDevice.Get (0));
+  wifiPhy.EnablePcap ("myproject_"+apRateControl, apDevice.Get (0));
+  wifiPhy.EnablePcap ("myproject_"+apRateControl, staDevice.Get (0));
 
-  //Register packet receptions to calculate throughput
+  //Register packet receptions to calculate throughput - STA
   Config::Connect ("/NodeList/1/ApplicationList/*/$ns3::PacketSink/Rx",
                    MakeCallback (&Statistics::RxCallback, &result));
 
-  //Register every change of rate
-  Config::Connect ("/NodeList/0/DeviceList/*/$ns3::WifiNetDevice/RemoteStationManager/$" + apRateControl + "/RateChange",
+  if (apRateControl == "ns3::MinstrelHtWifiManager")
+  {
+    //Register Rate Change - AP
+    Config::Connect ("/NodeList/0/DeviceList/*/$ns3::WifiNetDevice/RemoteStationManager/$" + apRateControl + "/RateChange",
                    MakeCallback (&Statistics::RateCallback, &result));
+  }
+  else if (apRateControl == "ns3::IdealWifiManager")
+  {
+    Config::Connect ("/NodeList/0/DeviceList/*/$ns3::WifiNetDevice/RemoteStationManager/$"+apRateControl+"/Rate",
+                   MakeCallback (&Statistics::RateIdealCallback, &result));
+  }
 
-  //Register failed transmission of packets
+  //Register failed transmission of packets - AP
   Config::Connect ("/NodeList/0/DeviceList/*/$ns3::WifiNetDevice/RemoteStationManager/$" + apRateControl + "/MacTxDataFailed",
                    MakeCallback (&Statistics::FailedPacketCallback, &result));
 
   Simulator::Stop (Seconds (simulationTime));
   Simulator::Run ();
 
-
+  result.outputTimeRate.Add ((Simulator::Now ()).GetSeconds (), result.prevRate/1000000);
+  
   //GnuPlot
-  std::ofstream outfile1 ("DistanceThroughput.plt");
-  Gnuplot gnuplot1 = Gnuplot ("DistanceThroughput.eps", "Throughput");
+  std::ofstream outfile1 ("DistanceThroughput_"+apRateControl+".plt");
+  Gnuplot gnuplot1 = Gnuplot ("DistanceThroughput_"+apRateControl+".eps", "Throughput");
   gnuplot1.SetTerminal ("post eps color enhanced");
-  gnuplot1.SetLegend ("time (sec)", "Throughput (Mb/s)");
+  gnuplot1.SetLegend ("Time (s)", "Throughput (Mb/s)");
   gnuplot1.SetTitle ("Throughput (AP to STA) vs Time");
   gnuplot1.AppendExtra ("set autoscale y");
   gnuplot1.AppendExtra ("set autoscale x");
   gnuplot1.AddDataset (result.outputDistanceThroughput);
   gnuplot1.GenerateOutput (outfile1);
 
-  std::ofstream outfile2 ("TimeRate.plt");
-  Gnuplot gnuplot2 = Gnuplot ("TimeRate.eps", "Rate");
+  std::ofstream outfile2 ("TimeRate_"+apRateControl+".plt");
+  Gnuplot gnuplot2 = Gnuplot ("TimeRate_"+apRateControl+".eps", "Rate");
   gnuplot2.SetTerminal ("post eps color enhanced");
   gnuplot2.SetLegend ("Time (sec)", "Rate (Mb/s)");
-  gnuplot2.SetTitle ("Rate (AP) vs Time");
+  gnuplot2.SetTitle ("Rate (AP) vs Time");  
   gnuplot2.AppendExtra ("set autoscale y");
   gnuplot2.AppendExtra ("set autoscale x");
+  result.outputTimeRate.SetStyle(Gnuplot2dDataset::Style(5));
   gnuplot2.AddDataset (result.outputTimeRate);
   gnuplot2.GenerateOutput (outfile2);
 
-  std::ofstream outfile3 ("TimePosition.plt");
-  Gnuplot gnuplot3 = Gnuplot ("TimePosition.eps", "Position");
+  std::ofstream outfile3 ("TimePosition_"+apRateControl+".plt");
+  Gnuplot gnuplot3 = Gnuplot ("TimePosition_"+apRateControl+".eps", "Position");
   gnuplot3.SetTerminal ("post eps color enhanced");
   gnuplot3.SetLegend ("Time (sec)", "Position_x (meters)");
   gnuplot3.SetTitle ("Positon_x (STA) vs Time");
@@ -405,18 +433,19 @@ int main (int argc, char *argv[])
   gnuplot3.AddDataset (result.outputTimePosition);
   gnuplot3.GenerateOutput (outfile3);
 
-  std::ofstream outfile4 ("FailedPackets.plt");
-  Gnuplot gnuplot4 = Gnuplot ("FailedPackets.eps", "Position");
+  std::ofstream outfile4 ("FailedPackets_"+apRateControl+".plt");
+  Gnuplot gnuplot4 = Gnuplot ("FailedPackets_"+apRateControl+".eps", "Position");
   gnuplot4.SetTerminal ("post eps color enhanced");
-  gnuplot4.SetLegend ("Time (sec)", "# Frames");
+  gnuplot4.SetLegend ("Time (s)", "# Frames");
   gnuplot4.SetTitle ("Failed Frames vs Time");
   gnuplot4.AppendExtra ("set autoscale y");
   gnuplot4.AppendExtra ("set autoscale x");
+  result.outputFailedPacket.SetStyle(Gnuplot2dDataset::Style(5));
   gnuplot4.AddDataset (result.outputFailedPacket);
   gnuplot4.GenerateOutput (outfile4);
 
-  std::ofstream outfile5 ("PosDevices.plt");
-  Gnuplot gnuplot5 = Gnuplot ("PosDevices.png");
+  std::ofstream outfile5 ("PosDevices_"+apRateControl+".plt");
+  Gnuplot gnuplot5 = Gnuplot ("PosDevices_"+apRateControl+".png");
   gnuplot5.SetTitle ("Position Devices");
   gnuplot5.SetTerminal ("png");
   gnuplot5.AppendExtra ("set ticslevel 0");
@@ -425,7 +454,6 @@ int main (int argc, char *argv[])
   gnuplot5.AppendExtra ("set zlabel \"Z (m)\"");
   gnuplot5.AppendExtra ("set xrange [-15:+15]");
   gnuplot5.AppendExtra ("set yrange [-15:+15]");
-
   gnuplot5.AddDataset (outputPosUsers);
   gnuplot5.GenerateOutput (outfile5);
 
